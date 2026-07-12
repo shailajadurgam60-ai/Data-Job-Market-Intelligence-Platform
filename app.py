@@ -170,6 +170,38 @@ if page=="Dashboard":
     with col4:
         st.subheader("💼 Job Role Distribution")
         st.pyplot(fig_role)
+    st.markdown("---")
+    st.subheader("💡 Key Insights")
+    top_skill = skill_df.iloc[0]["Skill"]
+    top_skill_jobs = skill_df.iloc[0]["Jobs"]
+
+    top_company = company_df.iloc[0]["Company"]
+    top_company_jobs = company_df.iloc[0]["Jobs"]
+
+    top_location = location_df.iloc[0]["Location"]
+    top_location_jobs = location_df.iloc[0]["Jobs"]
+
+    top_role = role_df.iloc[0]["Role"]
+    top_role_jobs = role_df.iloc[0]["Jobs"]
+    st.markdown(f"""
+    ### 📈 Market Summary
+
+    The current job market is primarily driven by **{top_role}** opportunities.
+    Employers are actively seeking professionals with **{top_skill}** skills.
+    Among all companies, **{top_company}** has the highest hiring activity,
+    while **{top_location}** continues to be the leading hiring location.
+    """)
+    st.info(f"""
+    📊 **Dataset Summary**
+
+    • **{top_skill}** is the most in-demand skill with **{top_skill_jobs}** job postings.
+
+    • **{top_company}** is the top hiring company with **{top_company_jobs}** openings.
+
+    • **{top_location}** has the highest hiring activity with **{top_location_jobs}** jobs.
+
+    • **{top_role}** is the most frequently advertised role with **{top_role_jobs}** postings.
+    """)
 if page == "Company Analysis":
     st.title("🏢 Company Analysis")
     st.write(
@@ -237,6 +269,10 @@ if page == "Company Analysis":
     )
 
     role_df.columns = ["Role", "Jobs"]
+    filtered_role_df = role_df[role_df["Role"] != "Other"]
+
+    if not filtered_role_df.empty:
+      role_df = filtered_role_df
     
     fig_role, ax = plt.subplots(figsize=(10,6))
 
@@ -295,6 +331,112 @@ if page == "Company Analysis":
         st.pyplot(fig_skill) 
     else:
       st.info("Not enough data to generate meaningful visualizations.")
+    #Job Listings
+    st.subheader("📋 Job Listings")
+
+    st.dataframe(
+    company_jobs[
+        [
+            "title",
+            "company",
+            "location",
+            "Role"
+        ]
+    ],
+    use_container_width=True
+    )
+    st.write(company_jobs[
+    company_jobs["Role"] == "Other"
+    ]["title"].unique())
+    #Insights
+    # -----------------------------
+# Company Insights
+# -----------------------------
+
+# Company-specific location data
+    company_location_df = (
+    company_jobs["location"]
+    .value_counts()
+    .reset_index()
+      )
+
+    company_location_df.columns = ["Location", "Jobs"]
+
+# Top values
+    top_role = role_df.iloc[0]["Role"]
+    top_role_jobs = role_df.iloc[0]["Jobs"]
+
+    top_skill = skill_df.iloc[0]["Skill"]
+    top_skill_jobs = skill_df.iloc[0]["Jobs"]
+
+    top_location = company_location_df.iloc[0]["Location"]
+    top_location_jobs = company_location_df.iloc[0]["Jobs"]
+
+    total_jobs = len(company_jobs)
+    unique_roles = company_jobs["Role"].nunique()
+    unique_locations = company_jobs["location"].nunique()
+    unique_skills = len(skill_count)
+    percentage = round((top_role_jobs / total_jobs) * 100, 1)
+    overall_company_df = (
+    df["company"]
+    .value_counts()
+    .reset_index()
+    )
+
+    overall_company_df.columns = ["Company", "Jobs"]
+
+    company_rank = (
+    overall_company_df[
+        overall_company_df["Company"] == selected_company
+    ].index[0] + 1
+    )
+    if company_rank <= 10:
+      recruiter_status = "one of the Top 10 recruiters"
+
+    elif company_rank <= 20:
+      recruiter_status = "one of the Top 20 recruiters"
+
+    else:
+      recruiter_status = "an emerging recruiter"
+    st.markdown("---")
+    st.subheader("💡 Company Insights")
+
+    st.markdown(f"""
+    ### 📈 Company Summary
+
+    **{selected_company}** is **{recruiter_status}** in the current job market,
+    with **{total_jobs}** job openings.
+
+    Approximately **{percentage}%** of its openings are for
+    **{top_role}** positions, indicating its primary hiring focus.
+
+    The company mainly seeks professionals skilled in
+    **{top_skill}**, with **{top_location}** being its leading hiring location.
+    """)
+
+    st.success(f"""
+    ### 🔍 Key Findings
+
+    ✅ Ranked **#{company_rank}** among all hiring companies.
+
+    ✅ **{selected_company}** currently has **{total_jobs}** job openings.
+
+    ✅ **{top_role}** is the dominant role (**{top_role_jobs}** jobs).
+
+    ✅ **{top_skill}** is the most requested skill (**{top_skill_jobs}** jobs).
+
+    ✅ **{top_location}** is the primary hiring location (**{top_location_jobs}** jobs).
+    """)
+
+    st.info(f"""
+    🎯 **Hiring Diversity**
+
+    • Hiring spans **{unique_roles}** different roles.
+
+    • Jobs are distributed across **{unique_locations}** locations.
+
+    • Recruiters are looking for **{unique_skills}** unique skills.
+     """)
 if page == "Location Analysis":
     st.title("📍Location Analysis")
     st.write(
@@ -456,6 +598,60 @@ if page == "Location Analysis":
     with col4:
       st.subheader("💼 Role Distribution")
       st.pyplot(fig_role)
+    #Insights
+    top_role = role_df.iloc[0]["Role"]
+    top_role_jobs = role_df.iloc[0]["Jobs"]
+
+    top_skill = skill_df.iloc[0]["Skill"]
+    top_skill_jobs = skill_df.iloc[0]["Jobs"]
+
+    top_company = company_df.iloc[0]["Company"]
+    top_company_jobs = company_df.iloc[0]["Jobs"]
+
+    total_jobs = len(location_jobs)
+
+    unique_companies = location_jobs["company"].nunique()
+    unique_roles = location_jobs["Role"].nunique()
+    unique_skills = len(skill_count)
+    percentage = round((top_role_jobs / total_jobs) * 100, 1)
+    if total_jobs >= 40:
+      market = "a major hiring hub"
+
+    elif total_jobs >= 20:
+      market = "an active hiring market"
+
+    else:
+      market = "an emerging hiring market"
+    st.markdown(f"""
+    ### 📈 Location Summary
+
+    **{selected_location}** is {market}, offering **{total_jobs}** job opportunities.
+
+    Nearly **{percentage}%** of the openings are for **{top_role}** positions.
+
+    Employers primarily seek **{top_skill}** skills, while **{top_company}**
+    is the most active recruiter in this location.
+    """)
+    st.success(f"""
+    ### 🔍 Key Findings
+
+    ✅ **{selected_location}** has **{total_jobs}** job openings.
+
+    ✅ **{top_role}** is the dominant role (**{top_role_jobs}** jobs).
+
+    ✅ **{top_skill}** is the most requested skill (**{top_skill_jobs}** jobs).
+
+    ✅ **{top_company}** has the highest hiring activity (**{top_company_jobs}** jobs).
+    """)
+    st.info(f"""
+    🎯 **Location Diversity**
+
+    • **{unique_companies}** companies are hiring here.
+
+    • Opportunities span **{unique_roles}** different job roles.
+
+    • Recruiters are looking for **{unique_skills}** unique skills.
+    """)
 if page == "Skill Analysis":
     st.subheader("🛠️ Skill Analysis")
     all_skills = set()
@@ -569,6 +765,73 @@ if page == "Skill Analysis":
         ["title", "company", "location", "Role", "Skill"]
     ]
     )
+    total_jobs = len(skill_jobs)
+
+    top_role = (
+    skill_jobs["Role"]
+    .value_counts()
+    .idxmax()
+    )
+
+    top_role_jobs = (
+    skill_jobs["Role"]
+    .value_counts()
+    .max()
+    )
+
+    top_company = (
+    skill_jobs["company"]
+    .value_counts()
+    .idxmax()
+    )
+
+    top_company_jobs = (
+    skill_jobs["company"]
+    .value_counts()
+    .max()
+    )
+   
+    top_location = (
+    skill_jobs["location"]
+    .value_counts()
+    .idxmax()
+    )
+
+    top_location_jobs = (
+    skill_jobs["location"]
+    .value_counts()
+    .max()
+    )
+    unique_companies = skill_jobs["company"].nunique()
+    unique_locations = skill_jobs["location"].nunique()
+    #Insights
+    st.markdown("---")
+    st.subheader("💡 Skill Insights")
+
+    st.markdown(f"""
+    ### 📈 Skill Summary
+
+    **{selected_skill.title()}** appears in **{total_jobs}** job postings across
+    **{unique_companies}** companies and **{unique_locations}** locations.
+
+    This skill is most frequently required for **{top_role}** positions.
+    The highest demand comes from **{top_company}**, while **{top_location}**
+    has the largest concentration of opportunities requiring this skill.
+    """)
+    st.success(f"""
+    ### 🔍 Key Findings
+
+    ✅ **{selected_skill.title()}** appears in **{total_jobs}** job postings.
+
+    ✅ Most demand is for **{top_role}** (**{top_role_jobs}** jobs).
+
+    ✅ **{top_company}** has the highest demand (**{top_company_jobs}** jobs).
+
+    ✅ **{top_location}** has the most openings (**{top_location_jobs}** jobs).
+
+    ✅ This skill is required by **{unique_companies}** companies across
+    **{unique_locations}** hiring locations.
+    """)
 if page=="Role Comparision":
     st.subheader("Role Comparision")
     selected_role = st.selectbox(
@@ -600,6 +863,25 @@ if page=="Role Comparision":
 
     with col4:
       st.metric("Skills", total_skills)
+      skill_count = {}
+
+    for skills in role_jobs["extracted_skills"]:
+      for skill in skills:
+        if skill not in skill_count:
+            skill_count[skill] = 1
+        else:
+            skill_count[skill] += 1
+
+    skill_df = pd.DataFrame(
+    skill_count.items(),
+    columns=["Skill", "Jobs"]
+    ) 
+
+    skill_df = (
+    skill_df
+    .sort_values(by="Jobs", ascending=False)
+    .head(10)
+    )
     #Top Charts
     company_df = (
     role_jobs["company"]
@@ -626,7 +908,7 @@ if page=="Role Comparision":
     .value_counts()
     .reset_index()
     )
-
+    
     location_df.columns = ["Location", "Jobs"]
     location_df=location_df.head(10)
     fig_location, ax = plt.subplots(figsize=(6,4))
@@ -681,3 +963,44 @@ if page=="Role Comparision":
         ["title", "company", "location", "Role"]
     ]
     )
+    #Insights
+    total_jobs = len(role_jobs)
+
+    top_skill = skill_df.iloc[0]["Skill"]
+    top_skill_jobs = skill_df.iloc[0]["Jobs"]
+
+    top_company = company_df.iloc[0]["Company"]
+    top_company_jobs = company_df.iloc[0]["Jobs"]
+
+    top_location = location_df.iloc[0]["Location"]
+    top_location_jobs = location_df.iloc[0]["Jobs"]
+
+    unique_companies = role_jobs["company"].nunique()
+    unique_locations = role_jobs["location"].nunique()
+    st.markdown("---")
+    st.subheader("💡 Role Insights")
+
+    st.markdown(f"""
+    ### 📈 Role Summary
+
+    There are **{total_jobs}** **{selected_role}** positions available in the dataset.
+
+    These opportunities are spread across **{unique_companies}** companies and
+    **{unique_locations}** hiring locations.
+
+    The most demanded skill is **{top_skill}**, while **{top_company}**
+    currently has the highest number of openings.
+    """)
+    st.success(f"""
+    ### 🔍 Key Findings
+
+    ✅ **{selected_role}** has **{total_jobs}** job postings.
+
+    ✅ **{top_skill}** is the most requested skill (**{top_skill_jobs}** jobs).
+
+    ✅ **{top_company}** has the highest demand (**{top_company_jobs}** jobs).
+ 
+    ✅ **{top_location}** has the largest number of openings (**{top_location_jobs}** jobs).
+
+    ✅ Opportunities are available across **{unique_companies}** companies and **{unique_locations}**   locations.
+    """)
