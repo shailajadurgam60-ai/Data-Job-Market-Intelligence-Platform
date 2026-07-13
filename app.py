@@ -8,17 +8,12 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
-
 st.title("📊 Data Job Market Intelligence Platform")
-
 st.write(
     "Analyze hiring trends, in-demand skills, companies, and locations through an interactive dashboard."
 )
 df = pd.read_csv("data/cleaned_jobs.csv")
 st.sidebar.title("Navigation")
-
-
-
 page = st.sidebar.radio(
     "Select a Section",
     [
@@ -30,21 +25,65 @@ page = st.sidebar.radio(
     ]
  )
 df["extracted_skills"] = df["extracted_skills"].apply(ast.literal_eval)
-skill_count = {}
-for skills in df["extracted_skills"]:
-      for skill in skills:
-          if skill not in skill_count:
-            skill_count[skill] = 1
-          else:
-            skill_count[skill] += 1
+#Skill df function
+def get_skill_df(data):
+    skill_count = {}
 
+    for skills in data["extracted_skills"]:
+        for skill in skills:
+            skill_count[skill] = skill_count.get(skill, 0) + 1
+
+    skill_df = (
+        pd.DataFrame(
+            skill_count.items(),
+            columns=["Skill", "Jobs"]
+        )
+        .sort_values(by="Jobs", ascending=False)
+    )
+
+    return skill_df, skill_count
+#company df function
+def get_company_df(data, top_n=10):
+    company_df = (
+        data["company"]
+        .value_counts()
+        .reset_index()
+    )
+
+    company_df.columns = ["Company", "Jobs"]
+
+    return company_df.head(top_n)
+#Location df function
+def get_location_df(data, top_n=10):
+
+    location_df = (
+        data["location"]
+        .value_counts()
+        .reset_index()
+    )
+
+    location_df.columns = ["Location", "Jobs"]
+
+    return location_df.head(top_n)
+#Role df function
+def get_role_df(data):
+
+    role_df = (
+        data["Role"]
+        .value_counts()
+        .reset_index()
+    )
+
+    role_df.columns = ["Role", "Jobs"]
+
+    return role_df
+skill_df,skill_count=get_skill_df(df)
 with st.expander("🔍 Debug Values"):
     st.write("Total Jobs:", len(df))
     st.write("Total Companies:", df["company"].nunique())
     st.write("Total Locations:", df["location"].nunique())
     st.write("SQL Count:", skill_count["sql"])
     st.write("Python Count:", skill_count["python"])
-
 if page=="Dashboard":
     st.header("📊 Job Market Overview")
     #Dashboard Metrics
@@ -64,13 +103,8 @@ if page=="Dashboard":
 
     with col4:
       st.metric("🛠️ Unique Skills", total_skills)
-      
-   
-    
-    #Top 10 Hiring Companies
-    company_counts = df["company"].value_counts().head(10)
-    company_df = company_counts.reset_index()
-    company_df.columns = ["Company", "Jobs"]
+       #Top 10 Hiring Companies
+    company_df = get_company_df(df)
     fig_company, ax = plt.subplots(figsize=(6, 4))
     ax.barh(company_df["Company"], company_df["Jobs"])
     for i, value in enumerate(company_df["Jobs"]):
@@ -80,45 +114,27 @@ if page=="Dashboard":
     ax.set_xlabel("Number of Jobs")
     ax.set_ylabel("Company")
     ax.invert_yaxis()
-    
-    
     #Top 10 Hiring Locations
-    location_counts = df["location"].value_counts().head(10)
-    location_df = location_counts.reset_index()
-    location_df.columns = ["Location", "Jobs"]
+    location_df = get_location_df(df)
     fig_location, ax = plt.subplots(figsize=(6, 4))
-
     ax.barh(location_df["Location"], location_df["Jobs"])
     for i, value in enumerate(location_df["Jobs"]):
          ax.text( value + 1,i,f"{value}",va="center",fontsize=9)
-    
-
     ax.set_title("Top 10 Hiring Locations")
     ax.set_xlabel("Number of Jobs")
     ax.set_ylabel("Location")
     ax.invert_yaxis()
-   
     col1, col2 = st.columns(2)
-
     with col1:
       st.subheader("🏢 Top Hiring Companies")
       st.pyplot(fig_company)
-
     with col2:
       st.subheader("📍 Top Hiring Locations")
       st.pyplot(fig_location)
 
     #Top 10 In-Demand Skills
-    skill_df = pd.DataFrame(
-    skill_count.items(),
-    columns=["Skill", "Jobs"]
-    )
-
-    skill_df = skill_df.sort_values(
-    by="Jobs",
-    ascending=False
-    ).head(10)
-
+    skill_df, skill_count = get_skill_df(df)
+    
     fig_skills, ax = plt.subplots(figsize=(7, 4.5))
 
     ax.barh(skill_df["Skill"], skill_df["Jobs"])
@@ -126,35 +142,25 @@ if page=="Dashboard":
     for i, value in enumerate(skill_df["Jobs"]):
       ax.text(value + 5, i, str(value), va="center", fontsize=9)
       
-      
     ax.tick_params(axis="y", labelsize=10)
     ax.set_title("Top 10 In Demand Skills")
     ax.set_xlabel("Number of Jobs")
     ax.set_ylabel("Skill")
     ax.invert_yaxis()
     fig_skills.tight_layout()
-    
     col3, col4 = st.columns(2)
-
     with col3:
       st.subheader("🛠️ Top 10 In-Demand Skills")
       st.pyplot(fig_skills)
 
     #Role Distribution
-    role_df = df["Role"].value_counts().reset_index()
-    role_df.columns = ["Role", "Jobs"]
-    role_df = role_df.sort_values(
-    by="Jobs",
-    ascending=False
-    )
     
+    role_df = get_role_df(df)
     fig_role, ax = plt.subplots(figsize=(6,4))
-
     ax.bar(
 	    role_df["Role"],
 	    role_df["Jobs"]
     )
-
     for i, value in enumerate(role_df["Jobs"]):
            ax.text(
 		i,
@@ -163,7 +169,6 @@ if page=="Dashboard":
 		ha="center",
 		fontsize=9
            )
-
     ax.set_title("Job Role Distribution")
     ax.set_xlabel("Role")
     ax.set_ylabel("Number of Jobs")
@@ -207,12 +212,7 @@ if page == "Company Analysis":
     st.write(
     "Explore hiring companies and analyze their recruitment trends."
     )
-    company_df = (
-    df["company"]
-    .value_counts()
-    .reset_index()
-    )
-    company_df.columns = ["Company", "Jobs"]
+    company_df = get_company_df(df,top_n=20)
     top_company_df = company_df.head(20)
     fig_company, ax = plt.subplots(figsize=(10,6))
 
@@ -220,9 +220,7 @@ if page == "Company Analysis":
     top_company_df["Company"],
     top_company_df["Jobs"]
     )
-
     ax.invert_yaxis()
-
     for i, value in enumerate(top_company_df["Jobs"]):
           ax.text(
           value + 1,
@@ -232,7 +230,6 @@ if page == "Company Analysis":
           )
     ax.set_title("Top 20 Hiring Companies")
     ax.set_xlabel("Number of Jobs")
-
     st.pyplot(fig_company)
     
     #Select Desired Company
@@ -244,10 +241,7 @@ if page == "Company Analysis":
     company_jobs = df[
     df["company"] == selected_company
     ]
-    
-    
     col1, col2, col3 = st.columns(3)
-
     with col1:
       st.metric("Jobs Posted", len(company_jobs))
 
@@ -262,15 +256,8 @@ if page == "Company Analysis":
         "Roles",
         company_jobs["Role"].nunique()
       )
-    role_df = (
-    company_jobs["Role"]
-    .value_counts()
-    .reset_index()
-    )
-
-    role_df.columns = ["Role", "Jobs"]
+    role_df = get_role_df(company_jobs)
     filtered_role_df = role_df[role_df["Role"] != "Other"]
-
     if not filtered_role_df.empty:
       role_df = filtered_role_df
     
@@ -285,29 +272,8 @@ if page == "Company Analysis":
        ax.text(i, value+1, str(value), ha="center")
 
     ax.set_title("Role Distribution")
-    skill_count = {}
-
-    for skills in company_jobs["extracted_skills"]:
-      for skill in skills:
-
-        if skill not in skill_count:
-            skill_count[skill] = 1
-        else:
-            skill_count[skill] += 1
-
-    skill_df = pd.DataFrame(
-    skill_count.items(),
-    columns=["Skill","Jobs"]
-    )
-
-    skill_df = (
-    skill_df
-    .sort_values(
-        by="Jobs",
-        ascending=False
-    )
-    .head(10)
-    )
+    skill_df,skill_count=get_skill_df(company_jobs)
+    
     fig_skill, ax = plt.subplots(figsize=(6,4))
  
     ax.barh(
@@ -345,22 +311,13 @@ if page == "Company Analysis":
     ],
     use_container_width=True
     )
-    st.write(company_jobs[
-    company_jobs["Role"] == "Other"
-    ]["title"].unique())
     #Insights
     # -----------------------------
 # Company Insights
 # -----------------------------
 
 # Company-specific location data
-    company_location_df = (
-    company_jobs["location"]
-    .value_counts()
-    .reset_index()
-      )
-
-    company_location_df.columns = ["Location", "Jobs"]
+    company_location_df = get_location_df(company_jobs)
 
 # Top values
     top_role = role_df.iloc[0]["Role"]
@@ -442,12 +399,7 @@ if page == "Location Analysis":
     st.write(
     "Explore hiring Locations and analyze the dominant jobs."
     )
-    location_df = (
-    df["location"]
-    .value_counts()
-    .reset_index()
-    )
-    location_df.columns = ["Location", "Jobs"]
+    location_df =get_location_df(df)
     top_locations_df = location_df.head(20)
     #Top 20 Hiring Locations
     fig_location, ax = plt.subplots(figsize=(10,6))
@@ -500,12 +452,7 @@ if page == "Location Analysis":
         "Roles",
         location_jobs["Role"].nunique()
       )
-    company_df = (
-    location_jobs["company"]
-    .value_counts()
-    .head(10)
-    .reset_index()
-    )
+    company_df = get_company_df(location_jobs)
 
     company_df.columns = ["Company", "Jobs"]
     
@@ -521,30 +468,7 @@ if page == "Location Analysis":
 
     ax.set_title("Top 10 Hiring Companies")
     st.write(location_jobs)
-    
-    skill_count = {}
-
-    for skills in location_jobs["extracted_skills"]:
-      for skill in skills:
-
-        if skill not in skill_count:
-            skill_count[skill] = 1
-        else:
-            skill_count[skill] += 1
-
-    skill_df = pd.DataFrame(
-    skill_count.items(),
-    columns=["Skill","Jobs"]
-    )
-
-    skill_df = (
-    skill_df
-    .sort_values(
-        by="Jobs",
-        ascending=False
-    )
-    .head(10)
-    )
+    skill_df,skill_count = get_skill_df(location_jobs)
     fig_skill, ax = plt.subplots(figsize=(6,4))
  
     ax.barh(
@@ -568,13 +492,9 @@ if page == "Location Analysis":
       
         st.pyplot(fig_company)
       
-    role_df = (
-    location_jobs["Role"]
-    .value_counts()
-    .reset_index()
-    )
+    role_df = get_role_df(location_jobs)
 
-    role_df.columns = ["Role", "Jobs"]
+    
     fig_role, ax = plt.subplots(figsize=(6,4))
 
     ax.barh(role_df["Role"], role_df["Jobs"])
@@ -685,16 +605,8 @@ if page == "Skill Analysis":
         "Locations",
         skill_jobs["location"].nunique()
       )
-    company_df = (
-    skill_jobs["company"]
-    .value_counts()
-    .reset_index()
-    )
-
-    company_df.columns = ["Company", "Jobs"]
-    company_df = company_df.head(10)
+    company_df = get_company_df(skill_jobs)
     fig_company, ax = plt.subplots(figsize=(10,6))
-
     ax.barh(company_df["Company"], company_df["Jobs"])
 
     for i, value in enumerate(company_df["Jobs"]):
@@ -705,14 +617,7 @@ if page == "Skill Analysis":
       ax.set_ylabel("Company")
       ax.set_title("Top 10 Hiring Companies")
     
-    location_df = (
-    skill_jobs["location"]
-    .value_counts()
-    .reset_index()
-    )
-
-    location_df.columns = ["Location", "Jobs"]
-    location_df=location_df.head(10)
+    location_df = get_location_df(skill_jobs)
     fig_location, ax = plt.subplots(figsize=(6,4))
 
     ax.barh(location_df["Location"], location_df["Jobs"])
@@ -724,8 +629,6 @@ if page == "Skill Analysis":
       ax.set_xlabel("Number of Jobs")
       ax.set_ylabel("Location")
       ax.set_title("Top 10 Hiring Locations")
-    
-    
     col1, col2 = st.columns(2)
 
     with col1:
@@ -735,13 +638,7 @@ if page == "Skill Analysis":
     with col2:
       st.subheader("📍 Top Hiring Locations")
       st.pyplot(fig_location)
-    role_df = (
-    skill_jobs["Role"]
-    .value_counts()
-    .reset_index()
-    )
-
-    role_df.columns = ["Role", "Jobs"]
+    role_df = get_role_df(skill_jobs)
     fig_role, ax = plt.subplots(figsize=(6,4))
 
     ax.barh(role_df["Role"], role_df["Jobs"])
@@ -863,34 +760,11 @@ if page=="Role Comparision":
 
     with col4:
       st.metric("Skills", total_skills)
-      skill_count = {}
+      
 
-    for skills in role_jobs["extracted_skills"]:
-      for skill in skills:
-        if skill not in skill_count:
-            skill_count[skill] = 1
-        else:
-            skill_count[skill] += 1
-
-    skill_df = pd.DataFrame(
-    skill_count.items(),
-    columns=["Skill", "Jobs"]
-    ) 
-
-    skill_df = (
-    skill_df
-    .sort_values(by="Jobs", ascending=False)
-    .head(10)
-    )
+    skill_df,skill_count=get_skill_df(role_jobs)
     #Top Charts
-    company_df = (
-    role_jobs["company"]
-    .value_counts()
-    .reset_index()
-    )
-
-    company_df.columns = ["Company", "Jobs"]
-    company_df = company_df.head(10)
+    company_df = get_company_df(role_jobs)
     fig_company, ax = plt.subplots(figsize=(10,6))
 
     ax.barh(company_df["Company"], company_df["Jobs"])
@@ -903,14 +777,7 @@ if page=="Role Comparision":
       ax.set_ylabel("Company")
       ax.set_title("Top 10 Hiring Companies")
     
-    location_df = (
-    role_jobs["location"]
-    .value_counts()
-    .reset_index()
-    )
-    
-    location_df.columns = ["Location", "Jobs"]
-    location_df=location_df.head(10)
+    location_df = get_location_df(role_jobs)
     fig_location, ax = plt.subplots(figsize=(6,4))
 
     ax.barh(location_df["Location"], location_df["Jobs"])
@@ -922,8 +789,6 @@ if page=="Role Comparision":
       ax.set_xlabel("Number of Jobs")
       ax.set_ylabel("Location")
       ax.set_title("Top 10 Hiring Locations")
-    
-    
     col1, col2 = st.columns(2)
 
     with col1:
@@ -933,13 +798,7 @@ if page=="Role Comparision":
     with col2:
       st.subheader("📍 Top Hiring Locations")
       st.pyplot(fig_location)
-    role_df = (
-    role_jobs["Role"]
-    .value_counts()
-    .reset_index()
-    )
-
-    role_df.columns = ["Role", "Jobs"]
+    role_df = get_role_df(role_jobs)
     fig_role, ax = plt.subplots(figsize=(6,4))
 
     ax.barh(role_df["Role"], role_df["Jobs"])
