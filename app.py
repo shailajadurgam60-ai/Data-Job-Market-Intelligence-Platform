@@ -8,10 +8,7 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
-st.title("📊 Data Job Market Intelligence Platform")
-st.write(
-    "Analyze hiring trends, in-demand skills, companies, and locations through an interactive dashboard."
-)
+
 @st.cache_data
 def load_data():
     df = pd.read_csv("data/cleaned_jobs.csv")
@@ -19,17 +16,6 @@ def load_data():
     return df
 
 df = load_data()
-st.sidebar.title("Navigation")
-page = st.sidebar.radio(
-    "Select a Section",
-    [
-        "Dashboard",
-        "Skill Analysis",
-        "Company Analysis",
-        "Location Analysis",
-        "Role Comparision"
-    ]
- )
 #Skill df function
 def get_skill_df(data):
     skill_count = {}
@@ -47,6 +33,27 @@ def get_skill_df(data):
     )
 
     return skill_df, skill_count
+skill_df,skill_count=get_skill_df(df)
+page = st.sidebar.radio(
+    "Choose a Section",
+    [
+        "Dashboard",
+        "Skill Analysis",
+        "Company Analysis",
+        "Location Analysis",
+        "Role Comparision",
+        "About Project"
+    ]
+)
+st.sidebar.markdown("---")
+st.sidebar.subheader("📊 Dataset Information")
+
+st.sidebar.metric("Job Posts", len(df))
+st.sidebar.metric("Companies", df["company"].nunique())
+st.sidebar.metric("Locations", df["location"].nunique())
+st.sidebar.metric("Roles", df["Role"].nunique())
+st.sidebar.metric("Skills", len(skill_count))
+
 #company df function
 def get_company_df(data, top_n=10):
     company_df = (
@@ -129,31 +136,44 @@ def plot_vertical_bar(
 
     return fig
 skill_df,skill_count=get_skill_df(df)
-with st.expander("🔍 Debug Values"):
-    st.write("Total Jobs:", len(df))
-    st.write("Total Companies:", df["company"].nunique())
-    st.write("Total Locations:", df["location"].nunique())
-    st.write("SQL Count:", skill_count["sql"])
-    st.write("Python Count:", skill_count["python"])
 if page=="Dashboard":
-    st.header("📊 Job Market Overview")
+    st.title("📊 Data Job Market Intelligence Platform")
+    st.write(
+        "Analyze hiring trends, in-demand skills, companies, locations and roles through an interactive dashboard."
+    )
+    st.header("📈 Job Market Overview")
+    st.caption(
+    "A quick snapshot of the current data job market."
+    )
     #Dashboard Metrics
     total_jobs = len(df)
     total_skills=len(skill_count)
     total_companies=df["company"].nunique()
     total_locations=df["location"].nunique()
     col1, col2, col3, col4 = st.columns(4)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col1, col2, col3, col4 = st.columns(4)
+
     with col1:
-      st.metric("📊 Total Jobs", total_jobs)
+      with st.container(border=True):
+        st.metric("📊 Total Jobs", total_jobs)
 
     with col2:
-      st.metric("🏢 Hiring Companies", total_companies)
+      with st.container(border=True):
+        st.metric("🏢 Companies", total_companies)
 
     with col3:
-      st.metric("📍 Hiring Locations", total_locations)
+      with st.container(border=True):
+        st.metric("📍 Locations", total_locations)
 
     with col4:
-      st.metric("🛠️ Unique Skills", total_skills)
+      with st.container(border=True):
+        st.metric("🛠 Skills", total_skills)
+    st.info(
+    "This dashboard summarizes hiring activity across companies, locations, job roles and technical  skills extracted from the dataset."
+    )
+     
        #Top 10 Hiring Companies
     company_df = get_company_df(df)
     fig_company = plot_horizontal_bar(
@@ -178,11 +198,15 @@ if page=="Dashboard":
     
     col1, col2 = st.columns(2)
     with col1:
-      st.subheader("🏢 Top Hiring Companies")
-      st.pyplot(fig_company)
+      with st.container():
+        st.subheader("🏢 Top Hiring Companies")
+        st.caption("Companies posting the highest number of jobs.")
+        st.pyplot(fig_company, use_container_width=True)
     with col2:
-      st.subheader("📍 Top Hiring Locations")
-      st.pyplot(fig_location)
+       with st.container():
+         st.subheader("📍 Top Hiring Locations")
+         st.caption("Top Hiring Locations for Data Professionals")
+         st.pyplot(fig_location,use_container_width=True)
 
     #Top 10 In-Demand Skills
     skill_df, skill_count = get_skill_df(df)
@@ -197,8 +221,11 @@ if page=="Dashboard":
     
     col3, col4 = st.columns(2)
     with col3:
-      st.subheader("🛠️ Top 10 In-Demand Skills")
-      st.pyplot(fig_skills)
+      with st.container():
+      
+       st.subheader("🛠️ Top 10 In-Demand Skills")
+       st.caption("Most Frequently Required Skills Across Job Postings")
+       st.pyplot(fig_skills,use_container_width=True)
 
     #Role Distribution
     
@@ -212,8 +239,11 @@ if page=="Dashboard":
     "Number of Jobs"
      )
     with col4:
-        st.subheader("💼 Job Role Distribution")
-        st.pyplot(fig_role)
+       with st.container():
+          
+          st.subheader("💼 Job Role Distribution")
+          st.caption("Distribution of Data Job Roles in the Dataset")
+          st.pyplot(fig_role,use_container_width=True)
     st.markdown("---")
     st.subheader("💡 Key Insights")
     top_skill = skill_df.iloc[0]["Skill"]
