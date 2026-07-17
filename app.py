@@ -11,11 +11,20 @@ st.set_page_config(
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/cleaned_jobs.csv")
+    df = pd.read_csv("data/processed_jobs.csv")
     df["extracted_skills"] = df["extracted_skills"].apply(ast.literal_eval)
     return df
 
 df = load_data()
+duplicates = df.duplicated(
+    subset=[
+        "title",
+        "company",
+        "location"
+    ]
+).sum()
+
+
 #Skill df function
 def get_skill_df(data):
     skill_count = {}
@@ -450,22 +459,35 @@ Explore hiring patterns across organizations and analyze:
         else:
             st.pyplot(fig_skill)
     #Job Listings
-    st.subheader("📋 Job Listings")
-    if company_jobs.empty:
-      st.info("No job listings available.")
-    else:
-      
-      st.dataframe(
-      company_jobs[
-        [
-            "title",
-            "company",
-            "location",
-            "Role"
-        ]
-    ],
-    use_container_width=True
+    st.markdown("---")
+
+    st.header(f"📋 {selected_company} Opportunities")
+
+    st.caption(
+    "Browse current job postings offered by the selected company."
     )
+
+    if company_jobs.empty:
+      st.info(
+        "No job postings available for the selected company."
+    )
+    else:
+      with st.container(border=True):
+
+        st.write(f"**{len(company_jobs)} job(s) found**")
+
+        st.dataframe(
+            company_jobs[
+                [
+                    "title",
+                    "company",
+                    "location",
+                    "Role"
+                ]
+            ],
+            hide_index=True,
+            use_container_width=True
+        )
     #Insights
     # -----------------------------
 # Company Insights
@@ -714,22 +736,35 @@ Explore:
       st.empty()
 
       #Job Listings
-    st.subheader("📋 Job Listings")
-    if location_jobs.empty:
-      st.info("No job listings available.")
-    else:
-      
-      st.dataframe(
-      location_jobs[
-        [
-            "title",
-            "location",
-            "company",
-            "Role"
-        ]
-    ],
-    use_container_width=True
+    st.markdown("---")
+
+    st.header(f"📋 Opportunities in {selected_location}")
+
+    st.caption(
+    "Browse current job postings available in the selected location."
     )
+
+    if location_jobs.empty:
+      st.info(
+        "No job postings found for the selected location."
+    )
+    else:
+      with st.container(border=True):
+
+        st.write(f"**{len(location_jobs)} job(s) found**")
+
+        st.dataframe(
+            location_jobs[
+                [
+                    "title",
+                    "company",
+                    "location",
+                    "Role"
+                ]
+            ],
+            hide_index=True,
+            use_container_width=True
+        )
     st.markdown("---")
     st.subheader("💡 Location Insights")
   
@@ -798,7 +833,22 @@ Employers most commonly request **{top_skill}** skills, while **{top_company}** 
     """)
     show_footer()
 if page == "Skill Analysis":
-    st.subheader("🛠️ Skill Analysis")
+    with st.container(border=True):
+      st.title("🛠️ Skill Analysis")
+
+      st.markdown("""
+### Explore Skills Driving the Data Job Market
+
+Analyze how individual technical skills influence hiring trends.
+
+Discover:
+
+- 📄 Total jobs requiring the selected skill
+- 🏢 Top hiring companies
+- 📍 Hiring locations
+- 💼 Most common job roles
+- 📊 Skill-specific hiring insights
+""")
     all_skills = set()
 
     for skills in df["extracted_skills"]:
@@ -817,19 +867,26 @@ if page == "Skill Analysis":
     col1, col2, col3 = st.columns(3)
 
     with col1:
-      st.metric("Jobs", len(skill_jobs))
+      with st.container(border=True):
+        st.metric(
+            "📄 Total Jobs",
+            len(skill_jobs)
+        )
 
     with col2:
-      st.metric(
-        "Companies",
-        skill_jobs["company"].nunique()
-      )
+      with st.container(border=True):
+        st.metric(
+            "🏢 Hiring Companies",
+            skill_jobs["company"].nunique()
+        )
 
     with col3:
-      st.metric(
-        "Locations",
-        skill_jobs["location"].nunique()
-      )
+      with st.container(border=True):
+        st.metric(
+            "📍 Hiring Locations",
+            skill_jobs["location"].nunique()
+        )
+    st.markdown("---")
     company_df = get_company_df(skill_jobs)
     fig_company=plot_horizontal_bar(company_df,
     "Company",
@@ -844,15 +901,11 @@ if page == "Skill Analysis":
     "Top 10 Hiring Locations",
     "Number of Jobs"
     )
-    col1, col2 = st.columns(2)
+    st.header("📊 Skill Hiring Analytics")
 
-    with col1:
-      st.subheader("🏢 Top Hiring Companies")
-      st.pyplot(fig_company)
-
-    with col2:
-      st.subheader("📍 Top Hiring Locations")
-      st.pyplot(fig_location)
+    st.caption(
+    "Visualize how the selected skill is demanded across companies, locations, and job roles."
+    )
     role_df = get_role_df(skill_jobs)
     fig_role=plot_vertical_bar(role_df,
     "Role",
@@ -861,19 +914,77 @@ if page == "Skill Analysis":
     "Number of Jobs",
     "Roles"
     )
-    st.pyplot(fig_role)
-    st.subheader("📋 Job Listings")
+    col1, col2 = st.columns(2)
+
+    with col1:
+      with st.container(border=True):
+        st.subheader("🏢 Top Hiring Companies")
+        st.caption(
+            "Companies with the highest demand for the selected skill."
+        )
+
+        if company_df.empty:
+            st.info("No company data available.")
+        else:
+            st.pyplot(fig_company, use_container_width=True)
+
+    with col2:
+      with st.container(border=True):
+        st.subheader("📍 Top Hiring Locations")
+        st.caption(
+            "Locations where this skill is most frequently required."
+        )
+
+        if location_df.empty:
+            st.info("No location data available.")
+        else:
+            st.pyplot(fig_location, use_container_width=True)
+    with st.container(border=True):
+      st.subheader("💼 Role Distribution")
+
+      st.caption(
+        "Job roles that most frequently require the selected skill."
+      )
+
+      if role_df.empty:
+        st.info("No role distribution available.")
+      else:
+        st.pyplot(fig_role, use_container_width=True)
+    
+    
+    st.markdown("---")
+
+    st.header("📋 Available Job Opportunities")
+
+    st.caption(
+    "Browse job postings that require the selected skill."
+    )
  
     skill_jobs_display = skill_jobs.copy()
 
     skill_jobs_display["Skill"] = selected_skill
-    st.dataframe(
-    skill_jobs_display[
-        ["title", "company", "location", "Role", "Skill"]
-    ]
-    )
+    
     total_jobs = len(skill_jobs)
+    if skill_jobs_display.empty:
+      st.info(
+        "No job postings found for the selected skill."
+      )
+    else:
+      with st.container(border=True):
+        st.write(f"**{len(skill_jobs_display)} job(s) found**")
 
+        st.dataframe(
+            skill_jobs_display[
+                [
+                    "title",
+                    "company",
+                    "location",
+                    "Role"
+                ]
+            ],
+            hide_index=True,
+            use_container_width=True
+        )
     top_role = (
     skill_jobs["Role"]
     .value_counts()
@@ -914,33 +1025,54 @@ if page == "Skill Analysis":
     #Insights
     st.markdown("---")
     st.subheader("💡 Skill Insights")
+    if total_jobs < 5:
+      st.warning(f"""
+⚠️ **Limited Data Available**
 
+Only **{total_jobs}** job posting(s) require **{selected_skill.title()}**.
+
+These insights are based on a small sample and may not fully represent the overall demand for this skill.
+      """)
     st.markdown(f"""
-    ### 📈 Skill Summary
+### 📈 Skill Summary
 
-    **{selected_skill.title()}** appears in **{total_jobs}** job postings across
-    **{unique_companies}** companies and **{unique_locations}** locations.
+**{selected_skill.title()}** appears in **{total_jobs}** job posting(s)
+across **{unique_companies}** companies and **{unique_locations}** locations.
 
-    This skill is most frequently required for **{top_role}** positions.
-    The highest demand comes from **{top_company}**, while **{top_location}**
-    has the largest concentration of opportunities requiring this skill.
-    """)
+The skill is most commonly associated with **{top_role}** positions.
+
+Among employers, **{top_company}** has the highest demand for this skill,
+while **{top_location}** currently offers the largest concentration of related opportunities.
+""")
     st.success(f"""
-    ### 🔍 Key Findings
+### 🔍 Key Findings
 
-    ✅ **{selected_skill.title()}** appears in **{total_jobs}** job postings.
+✅ **Total Opportunities:** **{total_jobs}** job posting(s) require **{selected_skill.title()}**.
 
-    ✅ Most demand is for **{top_role}** (**{top_role_jobs}** jobs).
+✅ **Most Common Role:** **{top_role}** appears in **{top_role_jobs}** posting(s).
 
-    ✅ **{top_company}** has the highest demand (**{top_company_jobs}** jobs).
+✅ **Top Hiring Company:** **{top_company}** has **{top_company_jobs}** posting(s).
 
-    ✅ **{top_location}** has the most openings (**{top_location_jobs}** jobs).
+✅ **Leading Location:** **{top_location}** has **{top_location_jobs}** posting(s).
 
-    ✅ This skill is required by **{unique_companies}** companies across
-    **{unique_locations}** hiring locations.
-    """)
+✅ This skill is required by **{unique_companies}** companies across **{unique_locations}** locations.
+""")
+    show_footer()
 if page=="Role Comparision":
-    st.subheader("Role Comparision")
+    with st.container(border=True):
+      st.title("💼 Role Comparison")
+
+      st.markdown("""
+### Compare Hiring Trends Across Data Roles
+
+Explore how different data roles vary in demand and discover:
+
+- 📄 Total job opportunities
+- 🏢 Top hiring companies
+- 📍 Hiring locations
+- 🛠️ Most requested technical skills
+- 📊 Role-specific hiring insights
+""")
     selected_role = st.selectbox(
     "Select a Role",
     sorted(df["Role"].unique())
@@ -960,19 +1092,36 @@ if page=="Role Comparision":
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-      st.metric("Jobs", len(role_jobs))
+      with st.container(border=True):
+        st.metric(
+            "📄 Total Jobs",
+            len(role_jobs)
+        )
 
     with col2:
-      st.metric("Companies", role_jobs["company"].nunique())
+      with st.container(border=True):
+        st.metric(
+            "🏢 Hiring Companies",
+            role_jobs["company"].nunique()
+        )
 
     with col3:
-      st.metric("Locations", role_jobs["location"].nunique())
+      with st.container(border=True):
+        st.metric(
+            "📍 Hiring Locations",
+            role_jobs["location"].nunique()
+        )
 
     with col4:
-      st.metric("Skills", total_skills)
+      with st.container(border=True):
+        st.metric(
+            "🛠️ Skills Required",
+            total_skills
+        )
       
-
+    st.markdown("---")
     skill_df,skill_count=get_skill_df(role_jobs)
+    fig_skill=plot_horizontal_bar(skill_df,"Skill","Jobs","Top 10 In-Demand skills for the Roles","Number of Jobs")
     #Top Charts
     company_df = get_company_df(role_jobs)
     fig_company=plot_horizontal_bar(company_df,
@@ -988,15 +1137,51 @@ if page=="Role Comparision":
     "Top 10 Hiring Locations",
     "Number of Jobs"
     )
+    st.header("📊 Role Hiring Analytics")
+
+    st.caption(
+    "Explore hiring patterns, company demand, locations, and technical skills for the selected role."
+    )
+    
     col1, col2 = st.columns(2)
 
     with col1:
-      st.subheader("🏢 Top Hiring Companies")
-      st.pyplot(fig_company)
+      with st.container(border=True):
+        st.subheader("🏢 Top Hiring Companies")
+
+        st.caption(
+            "Organizations hiring for the selected role."
+        )
+
+        if company_df.empty:
+            st.info("No company data available.")
+        else:
+            st.pyplot(fig_company, use_container_width=True)
 
     with col2:
-      st.subheader("📍 Top Hiring Locations")
-      st.pyplot(fig_location)
+      with st.container(border=True):
+        st.subheader("📍 Top Hiring Locations")
+
+        st.caption(
+            "Locations with the highest demand for this role."
+        )
+
+        if location_df.empty:
+            st.info("No location data available.")
+        else:
+            st.pyplot(fig_location, use_container_width=True)
+    with st.container(border=True):
+
+       st.subheader("🛠️ Most Required Skills")
+
+       st.caption(
+        "Technical skills most frequently requested for this role."
+       )
+
+       if skill_df.empty:
+         st.info("No skill data available.")
+       else:
+         st.pyplot(fig_skill, use_container_width=True)
     role_df = get_role_df(role_jobs)
     fig_role=plot_vertical_bar(role_df,
     "Role",
@@ -1005,17 +1190,41 @@ if page=="Role Comparision":
     "Number of Jobs",
     "Roles"
     )
-    st.pyplot(fig_role)
-    st.subheader("📋 Job Listings")
- 
     role_jobs_display = role_jobs.copy()
 
     role_jobs_display["Role"] = selected_role
-    st.dataframe(
-    role_jobs_display[
-        ["title", "company", "location", "Role"]
-    ]
+    st.markdown("---")
+
+    st.header(f"📋 {selected_role} Opportunities")
+
+    st.caption(
+    "Browse current job postings available for the selected role."
     )
+    if role_jobs_display.empty:
+      st.info(
+        "No job postings found for the selected role."
+    )
+    else:
+      with st.container(border=True):
+
+        st.write(
+            f"**{len(role_jobs_display)} job(s) found**"
+        )
+
+        st.dataframe(
+            role_jobs_display[
+                [
+                    "title",
+                    "company",
+                    "location",
+                    "Role"
+                ]
+            ],
+            hide_index=True,
+            use_container_width=True
+        )
+ 
+   
     #Insights
     total_jobs = len(role_jobs)
 
@@ -1032,31 +1241,50 @@ if page=="Role Comparision":
     unique_locations = role_jobs["location"].nunique()
     st.markdown("---")
     st.subheader("💡 Role Insights")
+    if total_jobs < 5:
+      st.warning(f"""
+⚠️ **Limited Data Available**
 
+Only **{total_jobs}** job posting(s) were found for the **{selected_role}** role.
+
+These insights are based on a small sample and may not fully represent overall hiring trends.
+""")
     st.markdown(f"""
-    ### 📈 Role Summary
+### 📈 Role Summary
 
-    There are **{total_jobs}** **{selected_role}** positions available in the dataset.
+The **{selected_role}** role has **{total_jobs}** job posting(s)
+across **{unique_companies}** companies and **{unique_locations}** locations.
 
-    These opportunities are spread across **{unique_companies}** companies and
-    **{unique_locations}** hiring locations.
+The most requested technical skill is **{top_skill}**.
 
-    The most demanded skill is **{top_skill}**, while **{top_company}**
-    currently has the highest number of openings.
-    """)
+Among employers, **{top_company}** currently has the highest demand,
+while **{top_location}** offers the largest concentration of opportunities for this role.
+""")
     st.success(f"""
-    ### 🔍 Key Findings
+### 🔍 Key Findings
 
-    ✅ **{selected_role}** has **{total_jobs}** job postings.
+✅ **Total Opportunities:** **{total_jobs}** job posting(s) for **{selected_role}**.
 
-    ✅ **{top_skill}** is the most requested skill (**{top_skill_jobs}** jobs).
+✅ **Top Required Skill:** **{top_skill}** appears in **{top_skill_jobs}** posting(s).
 
-    ✅ **{top_company}** has the highest demand (**{top_company_jobs}** jobs).
- 
-    ✅ **{top_location}** has the largest number of openings (**{top_location_jobs}** jobs).
+✅ **Top Hiring Company:** **{top_company}** has **{top_company_jobs}** posting(s).
 
-    ✅ Opportunities are available across **{unique_companies}** companies and **{unique_locations}**   locations.
-    """)
+✅ **Leading Location:** **{top_location}** has **{top_location_jobs}** posting(s).
+
+✅ Opportunities are available across **{unique_companies}** companies in **{unique_locations}** locations.
+""")
+    st.info(f"""
+🎯 **Role Snapshot**
+
+• Companies Hiring: **{unique_companies}**
+
+• Hiring Locations: **{unique_locations}**
+
+• Unique Skills Required: **{total_skills}**
+
+• Most In-Demand Skill: **{top_skill}**
+""")
+    show_footer()
 if page == "About Project":
 
     st.title("📖 About the Project")
