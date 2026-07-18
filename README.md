@@ -2,6 +2,13 @@
 
 An interactive data analytics dashboard built using **Python**, **Pandas**, **Matplotlib**, and **Streamlit** to explore current trends in the data job market.
 
+## 🌐 Live Demo
+
+🚀 **Try the live application here:**
+
+https://data-job-market-intelligence-platform-2yff2vnuivntdukkdpjwcu.streamlit.app/
+
+---
 The project transforms raw job posting data into actionable insights through data cleaning, preprocessing, skill extraction, role classification, exploratory data analysis (EDA), and an interactive dashboard.
 
 It enables users to explore hiring trends, compare job roles, analyze companies and locations, discover in-demand technical skills, and gain meaningful insights from real-world job postings.
