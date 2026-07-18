@@ -9,20 +9,23 @@ st.set_page_config(
     layout="wide"
 )
 
+
+
+
 @st.cache_data
 def load_data():
     df = pd.read_csv("data/processed_jobs.csv")
-    df["extracted_skills"] = df["extracted_skills"].apply(ast.literal_eval)
+
+    df["extracted_skills"] = (
+        df["extracted_skills"]
+        .fillna("[]")
+        .apply(ast.literal_eval)
+    )
+
     return df
 
 df = load_data()
-duplicates = df.duplicated(
-    subset=[
-        "title",
-        "company",
-        "location"
-    ]
-).sum()
+
 
 
 #Skill df function
